@@ -1,4 +1,1 @@
 providers = ["...", "node"]
-
-[phases.setup]
-cmds = ["npm i -g pnpm@8.6.2", "..."]

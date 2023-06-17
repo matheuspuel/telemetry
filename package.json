@@ -2,6 +2,7 @@
   "name": "telemetry",
   "private": true,
   "version": "0.0.1",
+  "packageManager": "pnpm@8.6.2",
   "scripts": {
     "prod": "export NODE_PATH=build/ && node build/src/index.js",
     "prod:linux": "export NODE_PATH=build/ && node build/src/index.js",
