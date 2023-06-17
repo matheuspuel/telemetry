@@ -36,6 +36,7 @@ app.post('/api/v1/:app/logs', (req, res) => {
   const data = decodeResult.right
   console.log(
     formatTimestamp(data.timestamp),
+    req.params.app,
     data.event,
     JSON.stringify(data.data),
   )
