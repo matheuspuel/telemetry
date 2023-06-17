@@ -25,7 +25,7 @@ const port = process.env.PORT || 8080
 app.use(cors())
 app.use(express.json())
 
-app.post('/api/v1/:app/logs', (req, res) => {
+app.get('/api/v1/:app/logs', (req, res) => {
   const body: unknown = req.body
   const decodeResult = LogInputDecoder.decode(body)
   if (decodeResult._tag === 'Left') {
