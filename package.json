@@ -7,7 +7,7 @@
     "prod:linux": "export NODE_PATH=build/ && node build/src/index.js",
     "prod:windows": "set NODE_PATH=build/&& node build/src/index.js",
     "start": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
-    "build": "npm run clean && tsc -b",
+    "build": "npm i -g pnpm@8.6.2 && npm run clean && tsc -b",
     "clean": "rimraf build/",
     "test": "jest --coverage",
     "test:watch": "jest --watch --coverage=false",
