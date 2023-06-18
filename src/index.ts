@@ -1,6 +1,11 @@
 import cors from 'cors'
+import dotenv from 'dotenv'
 import express from 'express'
+import * as D from 'io-ts/Decoder'
+import { Client } from 'pg'
 import { LogInputDecoder } from 'src/domain/models/Log'
+
+dotenv.config({ path: '.env' })
 
 const pad = (digits: number) => (value: number) =>
   value.toString().padStart(digits, '0')
@@ -25,24 +30,47 @@ const port = process.env.PORT || 8080
 app.use(cors())
 app.use(express.json())
 
+const client = new Client({ connectionString: process.env.DATABASE_URL })
+
+const decoder = D.array(LogInputDecoder)
+
 app.post('/api/v1/:app/logs', (req, res) => {
   const body: unknown = req.body
-  const decodeResult = LogInputDecoder.decode(body)
+  const decodeResult = decoder.decode(body)
   if (decodeResult._tag === 'Left') {
-    console.log('Decode error')
     res.sendStatus(500)
+    console.log('Decode error')
     return
   }
-  const data = decodeResult.right
-  console.log(
-    formatTimestamp(data.timestamp),
-    req.params.app,
-    data.event,
-    JSON.stringify(data.data),
+  res.json(null)
+  const logs = decodeResult.right
+  logs.map(l =>
+    console.log(
+      formatTimestamp(l.timestamp),
+      req.params.app,
+      l.event,
+      JSON.stringify(l.data),
+    ),
   )
-  res.sendStatus(200)
+  client.query(
+    `
+      INSERT INTO log
+      (timestamp, event, data) VALUES
+      ${logs
+        .map(
+          (l, i) =>
+            `($${i * 3 + 1}::timestamp, $${i * 3 + 2}::text, $${
+              i * 3 + 3
+            }::json)`,
+        )
+        .join(',\n')}
+    `,
+    logs.flatMap(l => [new Date(l.timestamp), l.event, l.data]),
+  )
 })
 
-app.listen(port, () => {
-  console.log(`Server listening on the port ${port}`)
-})
+client.connect().then(() =>
+  app.listen(port, () => {
+    console.log(`Server listening on the port ${port}`)
+  }),
+)
