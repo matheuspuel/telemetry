@@ -35,25 +35,26 @@ const client = new Client({ connectionString: process.env.DATABASE_URL })
 const decoder = D.array(LogInputDecoder)
 
 app.post('/api/v1/:app/logs', (req, res) => {
-  const body: unknown = req.body
-  const decodeResult = decoder.decode(body)
-  if (decodeResult._tag === 'Left') {
-    res.sendStatus(500)
-    console.log('Decode error')
-    return
-  }
-  res.json(null)
-  const logs = decodeResult.right
-  logs.map(l =>
-    console.log(
-      formatTimestamp(l.timestamp),
-      req.params.app,
-      l.event,
-      JSON.stringify(l.data),
-    ),
-  )
-  client.query(
-    `
+  try {
+    const body: unknown = req.body
+    const decodeResult = decoder.decode(body)
+    if (decodeResult._tag === 'Left') {
+      res.sendStatus(500)
+      console.log('Decode error')
+      return
+    }
+    res.json(null)
+    const logs = decodeResult.right
+    logs.map(l =>
+      console.log(
+        formatTimestamp(l.timestamp),
+        req.params.app,
+        l.event,
+        JSON.stringify(l.data),
+      ),
+    )
+    client.query(
+      `
       INSERT INTO log
       (timestamp, event, data) VALUES
       ${logs
@@ -65,8 +66,17 @@ app.post('/api/v1/:app/logs', (req, res) => {
         )
         .join(',\n')}
     `,
-    logs.flatMap(l => [new Date(l.timestamp), l.event, l.data]),
-  )
+      logs.flatMap(l => [new Date(l.timestamp), l.event, l.data]),
+    )
+  } catch (e) {
+    console.log('httpHandlerError')
+    console.log(e)
+  }
+})
+
+client.on('error', e => {
+  console.log('dbClientError')
+  console.log(e)
 })
 
 client.connect().then(() =>
