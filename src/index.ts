@@ -74,6 +74,20 @@ app.post('/api/v1/:app/logs', (req, res) => {
   }
 })
 
+app.get('/api/v1/data', async (req, res) => {
+  if (req.header('auth') !== process.env.READ_API_KEY) {
+    res.sendStatus(401)
+    return
+  }
+  try {
+    const result = await client.query(`SELECT * FROM log`)
+    res.json(result.rows)
+  } catch (e) {
+    console.log('error getting data')
+    console.log(e)
+  }
+})
+
 client.on('error', e => {
   console.log('dbClientError')
   console.log(e)
