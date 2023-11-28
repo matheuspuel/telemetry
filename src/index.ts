@@ -1,9 +1,9 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
-import * as D from 'io-ts/Decoder'
 import { Client } from 'pg'
-import { LogInputDecoder } from 'src/domain/models/Log'
+import { LogInput, LogInput2 } from 'src/domain/models/Log'
+import { S } from './utils/fp'
 
 dotenv.config({ path: '.env' })
 
@@ -32,12 +32,10 @@ app.use(express.json())
 
 const client = new Client({ connectionString: process.env.DATABASE_URL })
 
-const decoder = D.array(LogInputDecoder)
-
 app.post('/api/v1/:app/logs', (req, res) => {
   try {
     const body: unknown = req.body
-    const decodeResult = decoder.decode(body)
+    const decodeResult = S.parseEither(S.array(LogInput))(body)
     if (decodeResult._tag === 'Left') {
       res.sendStatus(500)
       console.log('Decode error')
@@ -70,6 +68,35 @@ app.post('/api/v1/:app/logs', (req, res) => {
     )
   } catch (e) {
     console.log('httpHandlerError')
+    console.log(e)
+  }
+})
+
+app.post('/api/v2/:app/logs', (req, res) => {
+  try {
+    const body: unknown = req.body
+    const decodeResult = S.parseEither(S.array(LogInput2))(body)
+    if (decodeResult._tag === 'Left') {
+      res.sendStatus(500)
+      console.log('Decode error')
+      return
+    }
+    res.json(null)
+    const logs = decodeResult.right
+    logs.map(l =>
+      console.log(
+        formatTimestamp(l.timestamp),
+        req.params.app,
+        l.logLevel,
+        ...l.annotations.map(
+          a => JSON.stringify(a[0]) + '=' + JSON.stringify(a[1]),
+        ),
+        ...l.spans.map(s => JSON.stringify(s.label) + '=' + s.startTime),
+        JSON.stringify(l.message),
+      ),
+    )
+  } catch (e) {
+    console.log('httpHandlerError2')
     console.log(e)
   }
 })
