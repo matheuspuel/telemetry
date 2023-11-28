@@ -93,6 +93,7 @@ app.post('/api/v2/:app/logs', (req, res) => {
         ),
         ...l.spans.map(s => JSON.stringify(s.label) + '=' + s.startTime),
         JSON.stringify(l.message),
+        ...(l.cause ? ['cause=' + JSON.stringify(l.cause)] : []),
       ),
     )
   } catch (e) {

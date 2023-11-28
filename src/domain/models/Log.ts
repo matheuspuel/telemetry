@@ -18,6 +18,7 @@ const LogInput2_ = S.struct({
   annotations: S.array(S.tuple(S.string, S.unknown)),
   logLevel: S.literal(...LogLevel.allLevels.map(_ => _._tag)),
   spans: S.array(S.struct({ label: S.string, startTime: S.number })),
+  cause: S.nullable(S.string),
 })
 export const LogInput2: S.Schema<
   S.Schema.From<typeof LogInput2_>,
