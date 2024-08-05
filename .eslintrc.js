@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 module.exports = {
   root: true,
-  ignorePatterns: ['/build/**'],
+  ignorePatterns: ['/*', '!/src'],
   env: {
     es2021: true,
     node: true,
