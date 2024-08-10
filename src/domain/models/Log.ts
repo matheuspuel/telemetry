@@ -1,26 +1,27 @@
-import { LogLevel, S } from '../../utils/fp'
+import * as S from '@effect/schema/Schema'
+import { LogLevel } from 'effect'
 
-export interface LogInput extends S.Schema.To<typeof LogInput_> {}
-const LogInput_ = S.struct({
-  timestamp: S.number,
-  event: S.string,
-  data: S.unknown,
+export interface LogInput extends S.Schema.Type<typeof LogInput_> {}
+const LogInput_ = S.Struct({
+  timestamp: S.Number,
+  event: S.String,
+  data: S.Unknown,
 })
 export const LogInput: S.Schema<
-  S.Schema.From<typeof LogInput_>,
-  LogInput
+  LogInput,
+  S.Schema.Encoded<typeof LogInput_>
 > = LogInput_
 
-export interface LogInput2 extends S.Schema.To<typeof LogInput2_> {}
-const LogInput2_ = S.struct({
-  timestamp: S.number,
-  message: S.unknown,
-  annotations: S.array(S.tuple(S.string, S.unknown)),
-  logLevel: S.literal(...LogLevel.allLevels.map(_ => _._tag)),
-  spans: S.array(S.struct({ label: S.string, startTime: S.number })),
-  cause: S.nullable(S.string),
+export interface LogInput2 extends S.Schema.Type<typeof LogInput2_> {}
+const LogInput2_ = S.Struct({
+  timestamp: S.Number,
+  message: S.Unknown,
+  annotations: S.Array(S.Tuple(S.String, S.Unknown)),
+  logLevel: S.Literal(...LogLevel.allLevels.map(_ => _._tag)),
+  spans: S.Array(S.Struct({ label: S.String, startTime: S.Number })),
+  cause: S.NullishOr(S.String),
 })
 export const LogInput2: S.Schema<
-  S.Schema.From<typeof LogInput2_>,
-  LogInput2
+  LogInput2,
+  S.Schema.Encoded<typeof LogInput2_>
 > = LogInput2_

@@ -1,9 +1,9 @@
+import * as S from '@effect/schema/Schema'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
 import { Client } from 'pg'
 import { LogInput, LogInput2 } from 'src/domain/models/Log'
-import { S } from './utils/fp'
 
 dotenv.config({ path: '.env' })
 
@@ -35,7 +35,7 @@ const client = new Client({ connectionString: process.env.DATABASE_URL })
 app.post('/api/v1/:app/logs', (req, res) => {
   try {
     const body: unknown = req.body
-    const decodeResult = S.parseEither(S.array(LogInput))(body)
+    const decodeResult = S.decodeUnknownEither(S.Array(LogInput))(body)
     if (decodeResult._tag === 'Left') {
       res.sendStatus(500)
       console.log('Decode error')
@@ -75,7 +75,7 @@ app.post('/api/v1/:app/logs', (req, res) => {
 app.post('/api/v2/:app/logs', (req, res) => {
   try {
     const body: unknown = req.body
-    const decodeResult = S.parseEither(S.array(LogInput2))(body)
+    const decodeResult = S.decodeUnknownEither(S.Array(LogInput2))(body)
     if (decodeResult._tag === 'Left') {
       res.sendStatus(500)
       console.log('Decode error')
@@ -121,8 +121,15 @@ client.on('error', e => {
   console.log(e)
 })
 
-client.connect().then(() =>
+client.connect().then(async () => {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS log (
+      timestamp timestamp NOT NULL,
+      event text NOT NULL,
+      data json NOT NULL
+    )
+  `)
   app.listen(port, () => {
     console.log(`Server listening on the port ${port}`)
-  }),
-)
+  })
+})
