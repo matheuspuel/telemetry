@@ -30,7 +30,42 @@ const port = process.env.PORT || 8080
 app.use(cors())
 app.use(express.json())
 
-const client = new Client({ connectionString: process.env.DATABASE_URL })
+const makeClient = () =>
+  new Client({ connectionString: process.env.DATABASE_URL })
+
+let client = makeClient()
+
+const connectDbClient = async () => {
+  try {
+    console.log('connecting to db')
+    await client.connect()
+    console.log('connected do db')
+  } catch (e) {
+    console.log('error connecting to db')
+    console.log(e)
+    await new Promise<void>(res => setTimeout(() => res(), 1000))
+    client = makeClient()
+    setClientErrorHandler()
+    await connectDbClient()
+  }
+}
+
+const setClientErrorHandler = () => {
+  client.on('error', async e => {
+    console.log('dbClientError')
+    console.log(e)
+    await client.end().catch(() => {})
+    client = makeClient()
+    setClientErrorHandler()
+    connectDbClient()
+  })
+}
+
+setClientErrorHandler()
+
+app.get('/health', (_req, res) => {
+  res.sendStatus(200)
+})
 
 app.post('/api/v1/:app/logs', (req, res) => {
   try {
@@ -51,8 +86,9 @@ app.post('/api/v1/:app/logs', (req, res) => {
         JSON.stringify(l.data),
       ),
     )
-    client.query(
-      `
+    client
+      .query(
+        `
       INSERT INTO log
       (timestamp, event, data) VALUES
       ${logs
@@ -64,8 +100,12 @@ app.post('/api/v1/:app/logs', (req, res) => {
         )
         .join(',\n')}
     `,
-      logs.flatMap(l => [new Date(l.timestamp), l.event, l.data]),
-    )
+        logs.flatMap(l => [new Date(l.timestamp), l.event, l.data]),
+      )
+      .catch(e => {
+        console.log('dbQueryError')
+        console.log(e)
+      })
   } catch (e) {
     console.log('httpHandlerError')
     console.log(e)
@@ -116,12 +156,7 @@ app.get('/api/v1/data', async (req, res) => {
   }
 })
 
-client.on('error', e => {
-  console.log('dbClientError')
-  console.log(e)
-})
-
-client.connect().then(async () => {
+connectDbClient().then(async () => {
   await client.query(`
     CREATE TABLE IF NOT EXISTS log (
       timestamp timestamp NOT NULL,
